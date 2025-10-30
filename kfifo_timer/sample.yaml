@@ -1,0 +1,7 @@
+sample:
+  description: Use a software timer to stage data in a k_fifo and drain it in batches.
+  name: k_fifo Timer Sample
+tests:
+  sample.apps.kfifo_timer:
+    tags: kernel fifo timer
+    build_only: true
