@@ -231,7 +231,22 @@ consumer: seq=4 uptime=4000 ms
 
 上述命令已在本地执行并通过编译。
 
-## 10. 更多资料
+## 10. 下一步作业：整合 ADC 与定时批量消费
+
+目标：在 STM32F103 平台上实现一个结合前述两个示例的应用。
+
+- **需求描述**：每 1 秒由软件定时器采集一次 ADC1 通道 0 的电压值；当环形缓冲区（可以继续使用 `k_fifo` 搭配对象池）达到半满时，唤醒主线程批量消费并打印采集到的电压。整体逻辑应模仿 `kfifo_timer` 示例的生产/消费机制，同时沿用 ADC 示例中的硬件依赖与 devicetree 配置。
+- **学习重点**：理解 `k_timer`、`k_fifo`、`k_sem`、`adc_read_dt()`、`adc_sequence`、`adc_raw_to_millivolts_dt()` 等 API 的调用时机与运行上下文差异，明确中断回调和线程侧的职责分工。
+- **落地建议**：
+  1. 在 `apps/hello` 下创建新的工程目录，基础结构可参考 `kfifo_timer` 与 `adc_stm32f103`。
+  2. 复用 STM32F103 的 devicetree overlay 和 `prj.conf`，确保 ADC 配置无误。
+  3. 定义固定长度的对象池与 `k_fifo`，软件定时器回调中仅完成：从对象池取缓存 → 填充 ADC 结果 → 入队 → 更新计数并在到达半满阈值时投递信号量。
+  4. 主线程阻塞等待信号量，批量取出 FIFO 内容后，打印原始值与换算电压，并将对象放回对象池。
+  5. 完成后总结实验收获，说明在定时器回调中避免阻塞调用的原因，以及如何保证缓冲区与采样频率匹配。
+
+完成该作业，可帮助建立 Zephyr 中“定时器驱动数据生产 + FIFO/信号量批量消费 + 外设采集”的完整认知。
+
+## 11. 更多资料
 
 - 官方文档：[Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
 - API 参考：[k_fifo](https://docs.zephyrproject.org/latest/kernel/services/fifos.html)、[k_timer](https://docs.zephyrproject.org/latest/kernel/services/timers.html)、[ADC API](https://docs.zephyrproject.org/latest/hardware/peripherals/adc.html)
